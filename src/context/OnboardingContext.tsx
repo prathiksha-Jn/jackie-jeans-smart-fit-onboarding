@@ -25,11 +25,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
   const updateField = <K extends keyof FitProfile>(field: K, value: FitProfile[K]) => {
     setFitProfile((prev) => {
-      // If we are clearing a brand, we should also clean up its size mappings
       if (field === 'brands') {
         const nextBrands = value as string[];
         const nextBrandSizes = { ...prev.brandSizes };
-        // Remove sizes of brands that are no longer selected
         Object.keys(nextBrandSizes).forEach((b) => {
           if (!nextBrands.includes(b)) {
             delete nextBrandSizes[b];

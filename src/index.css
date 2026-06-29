@@ -6,23 +6,47 @@
   --font-display: "Outfit", sans-serif;
   --font-serif: "Playfair Display", serif;
   
-  --color-warm-bg: #FCFCF9;
-  --color-warm-muted: #F4F4F1;
-  --color-editorial-border: #E5E5E0;
-  --color-editorial-text: #1A1A1A;
+  --color-warm-bg: #F8F6F2;
+--color-warm-muted: #F2EEE7;
+--color-editorial-border: #DDD6C8;
+--color-editorial-text: #1B1B1B;
 
-  --color-denim-50: #EFF6FF;
-  --color-denim-100: #DBEAFE;
-  --color-denim-200: #BFDBFE;
-  --color-denim-500: #3B82F6;
-  --color-denim-600: #2563EB;
-  --color-denim-700: #1E40AF;
-  --color-denim-800: #1E3A8A;
-  --color-denim-900: #1A1A1A;
+--color-denim-50: #EEF4F8;
+--color-denim-100: #D9E7F2;
+--color-denim-200: #BDD5E6;
+--color-denim-500: #2F5D8C;
+--color-denim-600: #234C73;
+--color-denim-700: #173F6D;
+--color-denim-800: #102E50;
+--color-denim-900: #081A2E;
 }
 
 body {
-  background-color: #FCFCF9;
-  color: #1A1A1A;
+  background: linear-gradient(
+    180deg,
+    #F8F6F2 0%,
+    #F2EEE7 100%
+  );
+
+  color: #1B1B1B;
+  font-family: "Inter", sans-serif;
+}
+*{
+    scroll-behavior:smooth;
+}
+::selection{
+    background:#173F6D;
+    color:white;
+}
+::-webkit-scrollbar{
+    width:8px;
 }
 
+::-webkit-scrollbar-thumb{
+    background:#173F6D;
+    border-radius:20px;
+}
+
+::-webkit-scrollbar-track{
+    background:#F2EEE7;
+}

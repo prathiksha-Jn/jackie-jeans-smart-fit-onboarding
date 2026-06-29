@@ -3,27 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BRAND_OPTIONS, HEIGHT_OPTIONS, WAIST_OPTIONS, HIP_OPTIONS, SIZE_OPTIONS } from '../types';
+import { BRAND_OPTIONS, HEIGHT_OPTIONS, SIZE_OPTIONS } from '../types';
 
 // Simple text to number dictionary
 const NUMBER_WORDS: Record<string, number> = {
   zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
   eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17,
   eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60,
-  seventy: 70, eighty: 80, ninety: 90, hundred: 100
+  seventy: 70, eighty: 80, ninety: 90, hundred: 100,
 };
 
-// Helper to extract a number from spoken text
 export function parseSpokenNumber(text: string): number | null {
   const clean = text.toLowerCase().trim();
-  
-  // Try matching direct digits
+
   const digitMatch = clean.match(/\d+/);
   if (digitMatch) {
     return parseInt(digitMatch[0], 10);
   }
 
-  // Parse spoken words (e.g. "one hundred fifty")
   const words = clean.split(/[\s-]+/);
   let total = 0;
   let current = 0;
@@ -42,17 +39,14 @@ export function parseSpokenNumber(text: string): number | null {
   return total > 0 ? total : null;
 }
 
-// 1. Height Parser
 export function parseHeight(text: string): string | null {
   const clean = text.toLowerCase();
 
-  // Try parsing something like "5 foot 6" or "5'6"
-  // Look for feet: e.g. "five", "four", "six" or "5", "4", "6"
-  let feet = 5; // default
+  let feet = 5;
   let inches = 0;
 
-  const feetMatch = clean.match(/(4|5|6)\s*(foot|feet|ft|'|foot's)?/i);
-  const wordFeetMatch = clean.match(/(four|five|six)\s*(foot|feet|ft|'|foot's)?/i);
+  const feetMatch = clean.match(/(4|5|6)\s*(foot|feet|ft|')?/i);
+  const wordFeetMatch = clean.match(/(four|five|six)\s*(foot|feet|ft|')?/i);
 
   if (feetMatch) {
     feet = parseInt(feetMatch[1], 10);
@@ -63,9 +57,7 @@ export function parseHeight(text: string): string | null {
     if (word === 'six') feet = 6;
   }
 
-  // Look for inches
-  // Remove the feet match first to avoid double matching
-  const remainingClean = clean.replace(/(four|five|six|4|5|6)\s*(foot|feet|ft|'|foot's)?/i, '');
+  const remainingClean = clean.replace(/(four|five|six|4|5|6)\s*(foot|feet|ft|')?/i, '');
   const inchVal = parseSpokenNumber(remainingClean);
   if (inchVal !== null && inchVal >= 0 && inchVal <= 11) {
     inches = inchVal;
@@ -74,7 +66,6 @@ export function parseHeight(text: string): string | null {
   } else if (clean.includes('eleven')) {
     inches = 11;
   } else {
-    // Check if the user said "five six" (two numbers)
     const numbers = clean.match(/\d+/g);
     if (numbers && numbers.length >= 2) {
       feet = parseInt(numbers[0], 10);
@@ -86,10 +77,9 @@ export function parseHeight(text: string): string | null {
   if (HEIGHT_OPTIONS.includes(result)) {
     return result;
   }
-  
-  // Direct matching if they state exactly
+
   for (const option of HEIGHT_OPTIONS) {
-    const cleanOption = option.replace(/['"]/g, ' ').replace(/\s+/g, ' ').trim(); // "5 6"
+    const cleanOption = option.replace(/['"]/g, ' ').replace(/\s+/g, ' ').trim();
     if (clean.includes(cleanOption) || clean.includes(option)) {
       return option;
     }
@@ -98,7 +88,6 @@ export function parseHeight(text: string): string | null {
   return null;
 }
 
-// 2. Weight Parser
 export function parseWeight(text: string): string | null {
   const clean = text.toLowerCase();
   if (clean.includes('skip') || clean.includes('no') || clean.includes('private')) {
@@ -111,7 +100,6 @@ export function parseWeight(text: string): string | null {
   return null;
 }
 
-// 3. Waist Parser
 export function parseWaist(text: string): string | null {
   const num = parseSpokenNumber(text);
   if (num && num >= 24 && num <= 52) {
@@ -120,7 +108,6 @@ export function parseWaist(text: string): string | null {
   return null;
 }
 
-// 4. Hip Parser
 export function parseHips(text: string): string | null {
   const num = parseSpokenNumber(text);
   if (num && num >= 32 && num <= 60) {
@@ -129,7 +116,6 @@ export function parseHips(text: string): string | null {
   return null;
 }
 
-// 5. Waist Preference Parser
 export function parseWaistPreference(text: string): 'Snug' | 'Slightly Relaxed' | 'Relaxed' | null {
   const clean = text.toLowerCase();
   if (clean.includes('slightly relaxed') || clean.includes('slightly')) return 'Slightly Relaxed';
@@ -138,7 +124,6 @@ export function parseWaistPreference(text: string): 'Snug' | 'Slightly Relaxed' 
   return null;
 }
 
-// 6. Waistband Position Parser
 export function parseWaistbandPosition(text: string): 'High Rise' | 'Mid Rise' | 'Low Rise' | null {
   const clean = text.toLowerCase();
   if (clean.includes('high rise') || clean.includes('high')) return 'High Rise';
@@ -147,7 +132,6 @@ export function parseWaistbandPosition(text: string): 'High Rise' | 'Mid Rise' |
   return null;
 }
 
-// 7. Thigh Fit Parser
 export function parseThighFit(text: string): 'Fitted' | 'Relaxed' | 'Loose' | null {
   const clean = text.toLowerCase();
   if (clean.includes('fitted') || clean.includes('tight')) return 'Fitted';
@@ -156,14 +140,23 @@ export function parseThighFit(text: string): 'Fitted' | 'Relaxed' | 'Loose' | nu
   return null;
 }
 
-// 8. Brands Parser
 export function parseBrands(text: string): string[] | null {
   const clean = text.toLowerCase();
-  const matchedBrands: string[] = [];
 
+  // Handle special keywords before individual brand matching
+  const allPhrases = ['all brands', 'all of them', 'all of the above', 'every brand', 'everything'];
+  if (allPhrases.some((p) => clean.includes(p)) || clean.trim() === 'all') {
+    return BRAND_OPTIONS;
+  }
+
+  const nonePhrases = ["none", "no brands", "haven't bought any", "no", "nothing", "neither"];
+  if (nonePhrases.some((p) => clean.includes(p))) {
+    return [];
+  }
+
+  const matchedBrands: string[] = [];
   for (const brand of BRAND_OPTIONS) {
-    // levis -> levi's, wrangler -> wrangler, calvin klein -> calvin klein
-    const normalizedBrand = brand.toLowerCase().replace(/['s]/g, ''); // "levi"
+    const normalizedBrand = brand.toLowerCase().replace(/['']/g, '');
     if (clean.includes(normalizedBrand) || clean.includes(brand.toLowerCase())) {
       matchedBrands.push(brand);
     }
@@ -172,7 +165,6 @@ export function parseBrands(text: string): string[] | null {
   return matchedBrands.length > 0 ? matchedBrands : null;
 }
 
-// 9. Brand Size Parser
 export function parseBrandSize(text: string): string | null {
   const num = parseSpokenNumber(text);
   if (num && SIZE_OPTIONS.includes(String(num))) {
@@ -181,8 +173,9 @@ export function parseBrandSize(text: string): string | null {
   return null;
 }
 
-// 10. Fit Frustration Parser
-export function parseFrustration(text: string): 'Waist Gap' | 'Hip Tightness' | 'Wrong Length' | 'Thigh Fit' | 'Rise' | 'Other' | null {
+export function parseFrustration(
+  text: string
+): 'Waist Gap' | 'Hip Tightness' | 'Wrong Length' | 'Thigh Fit' | 'Rise' | 'Other' | null {
   const clean = text.toLowerCase();
   if (clean.includes('waist gap') || clean.includes('gap')) return 'Waist Gap';
   if (clean.includes('hip tightness') || clean.includes('tight hip') || clean.includes('hips')) return 'Hip Tightness';

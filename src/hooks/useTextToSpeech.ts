@@ -8,73 +8,102 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 export function useTextToSpeech() {
   const [isSupported, setIsSupported] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const onEndCallbackRef = useRef<(() => void) | null>(null);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       setIsSupported(true);
     }
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   const stop = useCallback(() => {
-    if (!isSupported) return;
+    if (!('speechSynthesis' in window)) return;
+    // Clear the pending callback before cancelling so it doesn't fire
+    onEndCallbackRef.current = null;
     window.speechSynthesis.cancel();
-    setIsSpeaking(false);
-  }, [isSupported]);
+    if (isMountedRef.current) {
+      setIsSpeaking(false);
+    }
+  }, []);
 
   const speak = useCallback((text: string, onEnd?: () => void) => {
-    if (!isSupported) {
+    if (!('speechSynthesis' in window)) {
       onEnd?.();
       return;
     }
 
-    // Cancel any ongoing speaking
+    // Cancel any ongoing speech and clear previous callback
+    onEndCallbackRef.current = null;
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utteranceRef.current = utterance;
 
-    // Pick a good-sounding voice if possible
-    const voices = window.speechSynthesis.getVoices();
-    // Prefer English natural/Google/premium voices
-    const preferredVoice = voices.find(v => 
-      v.lang.startsWith('en') && 
-      (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium'))
-    ) || voices.find(v => v.lang.startsWith('en'));
-    
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
-    }
+    // Pick a quality English voice
+    const pickVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      return (
+        voices.find(
+          (v) =>
+            v.lang.startsWith('en') &&
+            (v.name.includes('Google') ||
+              v.name.includes('Natural') ||
+              v.name.includes('Premium'))
+        ) || voices.find((v) => v.lang.startsWith('en')) || null
+      );
+    };
 
-    utterance.rate = 1.0; // natural rate
-    utterance.pitch = 1.05; // slightly warm/friendly pitch
+    const voice = pickVoice();
+    if (voice) utterance.voice = voice;
+
+    utterance.rate = 1.0;
+    utterance.pitch = 1.05;
+
+    onEndCallbackRef.current = onEnd || null;
 
     utterance.onstart = () => {
-      setIsSpeaking(true);
+      if (isMountedRef.current) setIsSpeaking(true);
     };
 
     utterance.onend = () => {
-      setIsSpeaking(false);
-      onEnd?.();
+      if (isMountedRef.current) setIsSpeaking(false);
+      const cb = onEndCallbackRef.current;
+      onEndCallbackRef.current = null;
+      cb?.();
     };
 
     utterance.onerror = (event) => {
+      // 'interrupted' fires when we intentionally cancel — don't propagate
+      if (event.error === 'interrupted' || event.error === 'canceled') {
+        if (isMountedRef.current) setIsSpeaking(false);
+        return;
+      }
       console.warn('Speech synthesis error:', event);
-      setIsSpeaking(false);
-      onEnd?.();
+      if (isMountedRef.current) setIsSpeaking(false);
+      const cb = onEndCallbackRef.current;
+      onEndCallbackRef.current = null;
+      cb?.();
     };
 
-    window.speechSynthesis.speak(utterance);
-  }, [isSupported]);
+    // Some browsers require a tiny delay after cancel() before speak()
+    setTimeout(() => {
+      window.speechSynthesis.speak(utterance);
+    }, 60);
+  }, []);
 
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      if (isSupported) {
+      onEndCallbackRef.current = null;
+      if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
     };
-  }, [isSupported]);
+  }, []);
 
   return {
     isSupported,
